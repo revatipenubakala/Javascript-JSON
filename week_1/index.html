@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>1</h1>
+    <h1>2</h1>
+    <h1>1</h1>
+    <h1>1</h1>
+    <script>
+        balls = {
+            "golf": "golf balls",
+            "tennis": "tennis balls",
+            "ping pong": "ping pong balls",
+        };
+
+        document.write('add num');
+        
+        for(ball in balls)
+        {
+            console.log(ball);
+            
+        }
+
+        document.write('add num 2');
+
+
+    </script>
+
+
+    <h1>new</h1>
+
+    <p>
+        <a href="#" onclick="add();return false;"> more </a>
+    </p>
+
+    <ul id="the-list">
+        <li> First Item </li>
+    </ul>
+
+    <script>
+        counter = 1;
+        
+        function add() 
+        {
+            var x = document.createElement('li');
+            x.className = 'list-item';
+            x.innerHTML = "The Counter is " + counter;
+
+            document.getElementById('the-list').appendChild(x);
+            counter++;
+
+            console.log(document.getElementById('the-list') );
+
+        }
+    </script>
+
+</body>
+</html>
