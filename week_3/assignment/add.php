@@ -159,11 +159,6 @@
                     <div id="position_fields">
                     </div><br><br>
 
-
-
-
-
-                    <br><br>
                     <input type="submit" value="Add" class="btn btn-success"> 
                     <input type="submit" name="cancel" value="Cancel" class="btn btn-warning">
                 </form>

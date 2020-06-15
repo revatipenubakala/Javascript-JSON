@@ -26,7 +26,7 @@
         if ( is_string($msg) ) 
         {
             $_SESSION['error'] = $msg;
-            header('Location: edit.php?profile_id='.$_POST['profile_id'] );
+            header("Location: add.php");
             return;
         }
 
@@ -36,11 +36,10 @@
         if ( is_string($msg) ) 
         {
             $_SESSION['error'] = $msg;
-            header('Location: edit.php?profile_id='.$_POST['profile_id'] );
+            header("Location: add.php");
             return;
         }
-
-
+        // echo"<pre>"; print_r($_REQUEST);die();
       
             // echo "<pre>";
             // print_r($_POST);
@@ -72,31 +71,76 @@
             );
 
 
+            ////check user has previous position entry
+            $checkPosStmnt = $pdo->prepare('SELECT * FROM Position WHERE profile_id =:pid');
+            $checkPosStmnt->execute(array( ':pid' => $_POST['profile_id']));
 
-             // Clear out the old position entries
-            $stmt = $pdo->prepare('DELETE FROM Position
-                WHERE profile_id=:pid');
-            $stmt->execute(array( ':pid' => $_POST['profile_id']));
-
-            // Insert the position entries
-            $rank = 1;
-            for($i=1; $i<=9; $i++) {
-                if ( ! isset($_POST['year'.$i]) ) continue;
-                if ( ! isset($_POST['desc'.$i]) ) continue;
-                $year = $_POST['year'.$i];
-                $desc = $_POST['desc'.$i];
-
-                $stmt = $pdo->prepare('INSERT INTO Position
-                    (profile_id, rank, year, description)
-                VALUES ( :pid, :rank, :year, :desc)');
-                $stmt->execute(array(
-                    ':pid' => $_POST['profile_id'],
-                    ':rank' => $rank,
-                    ':year' => $year,
-                    ':desc' => $desc)
-                );
-                $rank++;
+            if ($checkPosStmnt->rowCount() != 0) 
+            {
+                // echo "if ";
+                // Clear out the old position entries
+               $stmt = $pdo->prepare('DELETE FROM Position
+                   WHERE profile_id=:pid');
+    
+               $stmt->execute(array( ':pid' => $_POST['profile_id']));
+               // Insert the position entries
+               $rank = 1;
+               for($i=1; $i<=9; $i++) 
+               {
+                   if ( ! isset($_POST['year'.$i]) ) continue;
+                   if ( ! isset($_POST['desc'.$i]) ) continue;
+    
+                   $year = $_POST['year'.$i];
+                   $desc = $_POST['desc'.$i];
+    
+                   $stmt = $pdo->prepare(
+                       'INSERT INTO Position (profile_id, rank, year, description)
+                       VALUES (:pid, :rank, :year, :desc)');
+    
+                   
+                   $stmt->execute(array(
+                       ':pid' => $_POST['profile_id'],
+                       ':rank' => $rank,
+                       ':year' => $year,
+                       ':desc' => $desc)
+                   );
+                   $rank++;
+               }
+                   
             }
+            else 
+            {
+                // echo "else ";
+                // echo $profileId."<br>";
+
+                // echo "<pre>";
+                // print_r($_POST);
+                // echo $_POST['profile_id']."<br>";
+               // Insert the position entries
+               $rank = 1;
+               for($i=1; $i<=9; $i++) 
+               {
+                   if ( ! isset($_POST['year'.$i]) ) continue;
+                   if ( ! isset($_POST['desc'.$i]) ) continue;
+    
+                   $year = $_POST['year'.$i];
+                   $desc = $_POST['desc'.$i];
+    
+                   $stmt = $pdo->prepare(
+                       'INSERT INTO Position (profile_id, rank, year, description)
+                       VALUES (:pid, :rank, :year, :desc)');
+    
+                   
+                   $stmt->execute(array(
+                       ':pid' => $_POST['profile_id'],
+                       ':rank' => $rank,
+                       ':year' => $year,
+                       ':desc' => $desc)
+                   );
+                   $rank++;
+               }
+                   
+            }    
 
 
 
@@ -134,7 +178,7 @@
 
 
     ////check profile_id exist or not
-    $sql = 'SELECT a.* , b.*
+    $sql = 'SELECT a.* 
             FROM Profile as a
             LEFT JOIN Position as b
             ON a.profile_id = b.profile_id
@@ -150,6 +194,8 @@
     $i = 0;
     while( $row = $stmt->fetch(PDO::FETCH_ASSOC) ) 
     {        
+
+        // print_r($row);die();
         $firstName =  htmlentities($row['first_name']);
         $lastName =  htmlentities($row['last_name']);
         $email =  htmlentities($row['email']);
