@@ -53,9 +53,29 @@
             document.getElementById('the-list').appendChild(x);
             counter++;
 
-            console.log(document.getElementById('the-list') );
+            // console.log(document.getElementById('the-list') );
 
         }
+    </script>
+
+    <script>
+        function PartyAnimal(nam) 
+        {
+            this.x = 0;
+            this.name = nam;
+            console.log(nam);
+            
+            this.party = () => {
+                this.x = this.x + 1;
+                console.log( nam+ '=' + this.x );
+                
+            }
+        }
+
+        s = new PartyAnimal("Sally");
+        s.party();
+        s.party();
+
     </script>
 
 </body>
