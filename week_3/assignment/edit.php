@@ -1,11 +1,15 @@
 <?php
     require_once('db.php');
+    require_once('mr_trait.php');
+
     session_start();
     if ( !isset($_SESSION['name']) ) 
     {
-        die("Not logged in");
+        die("ACCESS DENIED");
         
     }
+
+
     //// after form submission
     if (    
             isset($_POST['first_name']) 
@@ -16,26 +20,28 @@
     
     )    
     {
-        if ( strlen($_POST['first_name']) < 1 || strlen($_POST['last_name']) < 1 || strlen($_POST['email']) < 1 
-                || strlen($_POST['headline']) < 1 
-                || strlen($_POST['summary']) < 1 
-        ) 
+        /////from mr_trait.php
+        $msg = validateProfile();
+
+        if ( is_string($msg) ) 
         {
-            $_SESSION['error'] = "All fields are required";
-
-            header("Location: edit.php?profile_id=" . $_POST["profile_id"]);
-            return;            
-
+            $_SESSION['error'] = $msg;
+            header('Location: edit.php?profile_id='.$_POST['profile_id'] );
+            return;
         }
-        elseif ( !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)   ) 
-        {
-            $_SESSION['error'] = 'Email address must contain @';
 
-            header("Location: edit.php?profile_id=" . $_POST["profile_id"]);
-            return;            
-        }
-        else 
+        ////validate the position from mr_trait.php
+        $msg = validatePos();
+
+        if ( is_string($msg) ) 
         {
+            $_SESSION['error'] = $msg;
+            header('Location: edit.php?profile_id='.$_POST['profile_id'] );
+            return;
+        }
+
+
+      
             // echo "<pre>";
             // print_r($_POST);
             // die();
@@ -66,11 +72,45 @@
             );
 
 
+
+             // Clear out the old position entries
+            $stmt = $pdo->prepare('DELETE FROM Position
+                WHERE profile_id=:pid');
+            $stmt->execute(array( ':pid' => $_POST['profile_id']));
+
+            // Insert the position entries
+            $rank = 1;
+            for($i=1; $i<=9; $i++) {
+                if ( ! isset($_POST['year'.$i]) ) continue;
+                if ( ! isset($_POST['desc'.$i]) ) continue;
+                $year = $_POST['year'.$i];
+                $desc = $_POST['desc'.$i];
+
+                $stmt = $pdo->prepare('INSERT INTO Position
+                    (profile_id, rank, year, description)
+                VALUES ( :pid, :rank, :year, :desc)');
+                $stmt->execute(array(
+                    ':pid' => $_POST['profile_id'],
+                    ':rank' => $rank,
+                    ':year' => $year,
+                    ':desc' => $desc)
+                );
+                $rank++;
+            }
+
+
+
+
+
+
+
+
+
             $_SESSION['success'] = "Profile updated";
             header("Location: index.php");
             return;
             
-        }
+        
 
     } 
 
@@ -93,11 +133,49 @@
     }
 
 
-    $firstName =  htmlentities($row['first_name']);
-    $lastName =  htmlentities($row['last_name']);
-    $email =  htmlentities($row['email']);
-    $headline =  htmlentities($row['headline']);
-    $summary =  htmlentities($row['summary']);
+    ////check profile_id exist or not
+    $sql = 'SELECT a.* , b.*
+            FROM Profile as a
+            LEFT JOIN Position as b
+            ON a.profile_id = b.profile_id
+            WHERE a.profile_id = :xyz';
+    
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        'xyz' => $_GET['profile_id']
+    ]);
+
+
+    $i = 0;
+    while( $row = $stmt->fetch(PDO::FETCH_ASSOC) ) 
+    {        
+        $firstName =  htmlentities($row['first_name']);
+        $lastName =  htmlentities($row['last_name']);
+        $email =  htmlentities($row['email']);
+        $headline =  htmlentities($row['headline']);
+        $summary =  htmlentities($row['summary']);
+
+        if ( isset($row['rank']) ) 
+        {
+            $checkPos = true;
+        }
+        else 
+        {
+            $checkPos = false ;
+        }
+        $i++;
+
+        if ($i == 1) 
+        {
+            break;
+        } 
+        else 
+        {
+            continue;
+        }
+        
+    }
     
 ?>
 
@@ -157,8 +235,92 @@
             <br><br>
 
 
+
+            <label>
+                Position: <input type="submit" class="btn btn-primary"  id="addPos" value="+" >
+            </label><br><br>
+
+            <!-- printing Position -->
+            <?php 
+                $countPos = 0;
+                if($checkPos)
+                {
+                    $sql = 'SELECT a.* , b.*
+                        FROM Profile as a
+                        LEFT JOIN Position as b
+                        ON a.profile_id = b.profile_id
+                        WHERE a.profile_id = :xyz';
+
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute([
+                        'xyz' => $_GET['profile_id']
+                    ]);                    
+            ?>
+            <?php 
+                    echo "<ul>";
+                    while($row = $stmt->fetch(PDO::FETCH_ASSOC))
+                    {                
+            ?>  
+
+                        <div id="<?= 'position'.$row['rank']; ?>"> 
+                            <p>Year: <input type="text" name="<?= 'year'.$row['rank']; ?>" value="<?= $row['year']; ?>" /> 
+                            <input type="button" value="-" 
+                                <?php $rmvId = "'".'#position'.$row['rank']."'";?>
+                                onclick="$(<?= $rmvId?>).remove();return false;"></p> 
+                            <textarea name="<?= 'desc'.$row['rank']; ?>" rows="8" cols="80"><?= $row['description']; ?></textarea>
+                            <br><br> 
+                        </div>
+
+
+            <?php 
+                    $countPos++;
+
+                    }
+                    echo "</ul>";
+                }
+            ?> 
+
+
+            <div id="position_fields">
+            </div><br><br>
+
+
+
+
+
+
             <input type="submit" value="Update" name="Save" class="btn btn-success">
             <a href="index.php" class="btn btn-warning">Cancel</a>
+            <br><br>
         </form>
+
+                        
+        <script>
+            countPos = <?= $countPos; ?>;
+
+            // http://stackoverflow.com/questions/17650776/add-remove-html-inside-div-using-javascript
+            $(document).ready(function(){
+                window.console && console.log('Document ready called');
+                $('#addPos').click(function(event){
+                    // http://api.jquery.com/event.preventdefault/
+                    event.preventDefault();
+                    if ( countPos >= 9 ) {
+                        alert("Maximum of nine position entries exceeded");
+                        return;
+                    }
+                    countPos++;
+                    window.console && console.log("Adding position "+countPos);
+                    $('#position_fields').append(
+                        '<div id="position'+countPos+'"> \
+                            <p>Year: <input type="text" name="year'+countPos+'" value="" /> \
+                            <input type="button" value="-" \
+                                onclick="$(\'#position'+countPos+'\').remove();return false;"></p> \
+                            <textarea name="desc'+countPos+'" rows="8" cols="80"></textarea>\
+                            <br><br> \
+                        </div>');
+                });
+            });
+        </script>
+
     
     </div>

@@ -12,7 +12,10 @@
         'xyz' => $_GET['profile_id']
     ]);
 
-    if ($stmt->rowCount() == 0) 
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($row === false) 
     {
         $_SESSION['error'] = 'Bad value for profile_id';
         
@@ -129,7 +132,7 @@
                     {                
             ?>  
                         <li>
-                            <?= $row['year']; ?> : <?= $row['description']; ?>
+                            <?= htmlentities($row['year']); ?> : <?= htmlentities($row['description']); ?>
                         </li>
                        
             <?php 
